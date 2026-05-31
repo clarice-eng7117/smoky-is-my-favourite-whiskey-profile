@@ -1,0 +1,250 @@
+---
+title: "Spatial Clustering of Scotch Whisky Distilleries"
+subtitle: "Based on Geographic Location and Flavor Profiles"
+author: "Clarice Eng"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Spatial Clustering of Scotch Whisky Distilleries Based on Geographic Location and Flavor Profiles
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+# Load necessary libraries
+library(sf)
+library(tidyverse)
+library(leaflet) # For beautiful interactive maps
+library(factoextra) # For clustering visualization
+```
+
+## Project Goal
+This project explores spatial clustering patterns of operational Scotch whisky distilleries.   
+By combining geographic coordinates (spatial features) with qualitative taste profiles (body, sweetness, smoky, medicinal, etc.), we aim to discover if regional geographic proximity correlates with distinct flavor profiles.
+
+## Datasets
+Source: https://datashare.ed.ac.uk/handle/10283/2592
+
+```{r loading datasets}
+# Read the shapefile
+whisky <- st_read("data/Whisky.shp")
+
+# Inspect the dataset structure
+glimpse(whisky_data)
+```
+
+This dataset uses British National Grid (EPSG:27700), using meters rather than raw Lat/Lon degrees.
+The shapefile does not have `Region` column, but we have `Postcode` and  geometry fully intact.
+
+Hence, the 5 traditional Scotch regions are approximated based on their geographic coordinates (Easting and Northing) and famous layout boundaries (like the "Islay" island coordinates or the "Lowland-Highland" line):
+
+- Islay: West of Easting 150,000.  
+- Campbeltown: Kintyre peninsula (South of Northing 630,000 and West of Easting 210,000).  
+- Lowlands: South of the traditional line (Northing 700,000).  
+- Speyside: The dense cluster in the Northeast (Between Easting 300,000–350,000 and Northing 820,000–860,000).  
+- Highlands/Islands: Everything else.
+
+### Data Preparation
+```{r data preparation}
+# Engineering the Traditional Whisky Regions using Geographic Rules
+whisky <- whisky %>%
+  mutate(
+    Region = case_when(
+      Easting < 150000 ~ "Islay",
+      Easting < 210000 & Northing < 630000 ~ "Campbeltown",
+      Northing < 700000 ~ "Lowlands",
+      Easting >= 300000 & Easting <= 350000 & Northing >= 820000 & Northing <= 860000 ~ "Speyside",
+      TRUE ~ "Highlands"
+    ),
+    Region = as.factor(Region)
+  )
+
+# Check for missing values across flavor columns
+flavor_cols <- c("Body", "Sweetness", "Smoky", "Medicinal", "Tobacco", 
+                 "Honey", "Spicy", "Winey", "Nutty", "Malty", "Fruity", "Floral")
+
+missing_counts <- colSums(is.na(whisky %>% st_drop_geometry() %>% select(all_of(flavor_cols))))
+print("Missing values per flavor column:")
+print(missing_counts)
+```
+### Data Exploratory Analysis
+```{r EDA}
+# Map showing traditional assigned regions across Scotland
+ggplot(data = whisky) +
+  geom_sf(aes(color = Region), size = 3, alpha = 0.8) +
+  scale_color_brewer(palette = "Set1") +
+  theme_minimal() +
+  labs(
+    title = "Geographic Distribution of Scotch Whisky Regions",
+    subtitle = "Constructed using geographic boundaries",
+    x = "Easting (meters)",
+    y = "Northing (meters)"
+  )
+
+# Boxplot to see how a flavor (e.g., Smoky) is distributed across regions
+ggplot(data = whisky) +
+  geom_boxplot(aes(x = Region, y = Smoky, fill = Region)) +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Distribution of 'Smoky' Flavor by Region")
+```
+One of my top 1 favourite whiskey is from **Islay**. Look at Islay, its median smokiness is way up at 3.5, completely detached from the rest of Scotland. Meanwhile, Lowlands and Speyside group tightly at the bottom around 1.  
+This strongly suggests that flavor profiles are not randomly distributed across space, making it a perfect candidate for spatial autocorrelation tests.
+
+## Spatial Relationships & Autocorrelation
+K-Nearest Neighbors (KNN) graph will be built instead of a fixed-distance radius, which is not appropriate in Scotland because the Highlands are massive and sparse while Speyside is tiny and packed, thus, KNN guarantees that every distillery is evaluated against its closest peers.
+  
+*k = 4* as is used as  a standard baseline to generate a spatial weights matrix, and then run Global Moran's I tests.
+  
+Moran's I Value:
+- Positive value (near +1): Positive spatial autocorrelation (similar values cluster together—like Islay's high smoke or Speyside's low smoke).  
+- Zero (near 0): Complete spatial randomness.  
+- Negative value (near -1): Dispersion, spread out, scattered, or pushed away from each other rather than being grouped together.
+  
+p-value < 0.05: Statistically significant evidence of spatial clustering.
+  
+    
+    
+KNN Network and Spatial Weights Matrix are constructed because Scottish distilleries exhibit highly uneven spatial density, we use a K-Nearest Neighbors approach ($k = 4$) to establish local neighborhood contexts, then convert it into a row-standardized ("W") spatial weights matrix.
+
+
+```{r spatial-weights}
+# install.packages("spdep")
+library(spdep)
+
+# Extract geographic coordinates from the Projected CRS (British National Grid)
+coords <- st_coordinates(whisky)
+
+# Find the 4 nearest neighbors for each distillery point
+whisky_knn <- knearneigh(coords, k = 4)
+whisky_nb  <- knn2nb(whisky_knn)
+
+# Create row-standardized spatial weights
+whisky_weights <- nb2listw(whisky_nb, style = "W")
+
+# neighborhood network structure
+# use st_geometry() to draw the base map 
+plot(st_geometry(whisky), col = "darkgray", main = "4-Nearest Neighbors Network Graph")
+
+# Force R to immediately overlay the lines onto the active plot canvas
+plot(whisky_nb, coords, add = TRUE, col = "red", lwd = 1.5)
+```
+
+#### Note:   
+
+During neighbor construction, warnings indicated identical point coordinates (co-located facilities) and the presence of 2 sub-graphs. The sub-graphs accurately reflect the geographic isolation of island-based distilleries from the Scottish mainland network.
+
+The warning _simpleWarning: knearneigh: identical points found_ means that there are two or more distilleries in your dataset share the exact same geographic coordinates (Easting and Northing).
+  
+In Scotland, some massive distilling operations own multiple boutique distilleries on the exact same site, or the original data collector mapped a few close neighbors using a single village center point.
+
+### Global Spatial Autocorrelation (Moran's I Tests)
+The Moran's I Test calculates the formal spatial statistics for the three chosen flavor profiles: *Smoky, Fruity, and Floral* to evaluate whether these whisky taste characteristics are clustered geographically, completely random, or dispersed.
+
+```{r spatial statistic of flavor profile}
+# Test 1: Smoky Flavor
+print("--- Moran's I: Smoky ---")
+moran_smoky <- moran.test(whisky$Smoky, whisky_weights)
+print(moran_smoky)
+
+# Test 2: Fruity Flavor
+print("--- Moran's I: Fruity ---")
+moran_fruity <- moran.test(whisky$Fruity, whisky_weights)
+print(moran_fruity)
+
+# Test 3: Floral Flavor
+print("--- Moran's I: Floral ---")
+moran_floral <- moran.test(whisky$Floral, whisky_weights)
+print(moran_floral)
+```
+```{r summary-of-spatial-autocorrelation}
+# install.packages("broom")
+library(knitr)
+
+# Create a clean data frame extracting the exact statistics from results
+moran_results_df <- data.frame(
+  `Flavor Profile` = c("Smoky", "Fruity", "Floral"),
+  `Observed Moran's I` = c(
+    moran_smoky$estimate[1],
+    moran_fruity$estimate[1],
+    moran_floral$estimate[1]
+  ),
+  `Expectation` = c(
+    moran_smoky$estimate[2],
+    moran_fruity$estimate[2],
+    moran_floral$estimate[2]
+  ),
+  `Z-Score (Standard Deviate)` = c(
+    moran_smoky$statistic,
+    moran_fruity$statistic,
+    moran_floral$statistic
+  ),
+  `p-value` = c(
+    moran_smoky$p.value,
+    moran_fruity$p.value,
+    moran_floral$p.value
+  ),
+  `Spatial Pattern` = c(
+    "Strong Significant Clustering", 
+    "Moderate Significant Clustering", 
+    "Statistically Random"
+  ),
+  check.names = FALSE # Preserves the clean column titles with spaces
+)
+
+# 2. Render the data frame as a beautifully formatted markdown table
+kable(
+  moran_results_df, 
+  digits = 4, # Rounds all numeric decimals cleanly to 4 places
+  caption = "Global Moran's I Spatial Autocorrelation Results for Selected Whisky Flavors",
+  align = 'lccccc' # Left-aligns flavor names, centers all statistical metrics
+)
+```
+### Statistical Interpretation of Spatial Autocorrelation
+
+The Global Moran's I tests reveal that the geographical location of a distillery has a varying, profile-specific impact on the flavor characteristics of Scotch whisky. 
+
+#### Smoky Profile: High Spatial Clustering
+The test for the `Smoky` flavor profile shows a strong positive spatial autocorrelation, with an Observed Moran's I of **0.465** and an exceptionally high Z-score of **7.085** ($p < 0.001$). This confirms that smoky whiskies are not randomly distributed across Scotland; instead, distilleries with high smoky scores are tightly clustered near other high-smoky operations. This is heavily driven by the localized concentration of heavily-peated production methods on islands like Islay.
+
+#### Fruity Profile: Moderate Spatial Clustering
+The `Fruity` flavor profile yields a moderate but statistically significant positive spatial autocorrelation (Moran's I = **0.171**, Z-score = **2.699**, $p = 0.003$). This indicates a regional preference or a shared production topology among neighboring distilleries (such as the widespread use of specific yeast strains or tall copper stills in areas like Speyside) that creates localized pockets of fruity taste profiles.
+
+#### Floral Profile: Spatial Randomness
+Interestingly, the `Floral` profile fails to clear the standard $95\%$ confidence threshold (Moran's I = **0.089**, Z-score = **1.494**, $p = 0.068$). Because the p-value is greater than $0.05$, we fail to reject the null hypothesis of spatial randomness. This implies that a whisky's floral qualities are likely dictated by individual distillery-specific production choices (such as cut-points during distillation) rather than regional or geographic proximity.
+
+
+## Flavor Pattern Exploration (PCA)
+The findings above shows that geography definitely plays a role in some flavors (like Smoke) but not others (like Floral), we need to find out how all 12 flavor variables interact with each other before building a model. We do this with Principal Component Analysis (PCA) to reduce our 12 taste dimensions, so that the main axes of taste variation across Scottish distilleries can be extracted.
+
+```{r pca}
+# 1. Isolate the 12 active numeric flavor profile columns
+flavor_data <- whisky %>% 
+  st_drop_geometry() %>% 
+  select(Body, Sweetness, Smoky, Medicinal, Tobacco, Honey, Spicy, Winey, Nutty, Malty, Fruity, Floral)
+
+# 2. Run PCA with scaling enabled
+whisky_pca <- prcomp(flavor_data, scale. = TRUE)
+
+# 3. FIX: Plot the Scree Plot using safe hex codes (#FFBF00 is Amber)
+fviz_eig(whisky_pca, addlabels = TRUE, ylim = c(0, 50),
+         barfill = "#FFBF00", barcolor = "#D4AF37",
+         title = "Scree Plot: Variance Explained by Principal Components")
+
+# 4. Generate the Biplot to see distillery positions and flavor directions
+fviz_pca_biplot(whisky_pca, 
+                repel = TRUE,
+                col.var = "red",         # Color of the flavor arrows
+                col.ind = whisky$Region, # Color points by our engineered geographic regions!
+                palette = "Set1",
+                legend.title = "Geographic Region",
+                title = "PCA Biplot: Whisky Flavor Dimensions vs Geographic Regions")
+```
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

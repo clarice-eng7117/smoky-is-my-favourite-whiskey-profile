@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mets:METS xmlns:mets="http://www.loc.gov/METS/" xmlns:xlink="http://www.w3.org/TR/xlink/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dim="http://www.dspace.org/xmlns/dspace/dim" OBJEDIT="/admin/item?itemID=731" OBJID="/handle/10672/516" PROFILE="DSPACE METS SIP Profile 1.0" LABEL="DSpace Item" ID="hdl:10672/516">
+<mets:dmdSec GROUPID="group_dmd_0" ID="dmd_1">
+<mets:mdWrap MDTYPE="OTHER" OTHERMDTYPE="DIM">
+<mets:xmlData>
+<dim:dim dspaceType="ITEM">
+<dim:field element="contributor" mdschema="dc">pope, addy</dim:field>
+<dim:field element="contributor" qualifier="other" language="en" mdschema="dc">University of Edinburgh</dim:field>
+<dim:field element="coverage" qualifier="spatial" language="en" mdschema="dc">northlimit=58.9705;eastlimit=-2.3301;southlimit=54.8084;westlimit=-6.2542;</dim:field>
+<dim:field element="date" qualifier="accessioned" mdschema="dc">2014-01-08T09:40:48Z</dim:field>
+<dim:field element="date" qualifier="available" mdschema="dc">2014-01-08T09:40:48Z</dim:field>
+<dim:field element="date" qualifier="issued" mdschema="dc">2014-01-08</dim:field>
+<dim:field element="identifier" mdschema="dc">http://www.sharegeo.ac.uk/bitstream/handle/10672/516/Whisky.zip?sequence=1</dim:field>
+<dim:field element="identifier" qualifier="uri" mdschema="dc">http://hdl.handle.net/10672/516</dim:field>
+<dim:field element="description" language="en" mdschema="dc">Data sourced from https://www.mathstat.strath.ac.uk/outreach/nessie/nessie_whisky.html , corrected (a few errors in original data such as lat/lon mislabled) and then converted into shapefile and kml formats</dim:field>
+<dim:field element="description" qualifier="abstract" language="en" mdschema="dc">This dataset contains the location of all currently operational Whisky distilleries in Scotland. In addition to the geolocation information, the dataset contains information on the nature of the whisky giving a score for body, sweetness, smoky, medicinal, tabacco, honey, Spicy, Winey, nutty, malty, fruity, floral nature of each distillery. Only one score per distillery is provided to it is assumed that this is a generalisation of the whisky that each distillery offers.</dim:field>
+<dim:field element="format" language="en" mdschema="dc">ESRI Shapefile</dim:field>
+<dim:field element="language" qualifier="iso" language="en" mdschema="dc">en</dim:field>
+<dim:field element="rights" language="en" mdschema="dc">This data is made available under Creative Commons Attribution-ShareAlike whose full text can be found at http://creativecommons.org/licenses/by-sa/3.0/</dim:field>
+<dim:field element="subject" language="en" mdschema="dc">Whisky</dim:field>
+<dim:field element="subject" language="en" mdschema="dc">Alcohol</dim:field>
+<dim:field element="subject" qualifier="classification" language="en" mdschema="dc">Society</dim:field>
+<dim:field element="title" language="en" mdschema="dc">Scotch Whisky characteristics</dim:field>
+<dim:field element="type" language="en" mdschema="dc">GIS vector data</dim:field>
+</dim:dim>
+</mets:xmlData>
+</mets:mdWrap>
+</mets:dmdSec>
+<mets:fileSec>
+<mets:fileGrp USE="CONTENT">
+<mets:file CHECKSUMTYPE="MD5" GROUPID="group_file_1024" ID="file_1024" MIMETYPE="application/zip" SIZE="15883" CHECKSUM="fa9bea2d019f1d51ea69c1d42b83aae6">
+<mets:FLocat LOCTYPE="URL" xlink:title="Whisky.zip" xlink:type="locator" xlink:href="/bitstream/handle/10672/516/Whisky.zip?sequence=1"/>
+</mets:file>
+</mets:fileGrp>
+<mets:fileGrp USE="LICENSE">
+<mets:file CHECKSUMTYPE="MD5" GROUPID="group_file_1025" ID="file_1025" MIMETYPE="text/plain; charset=utf-8" SIZE="127" CHECKSUM="44d9ed4f6902860fbb92bf26df40fc3b">
+<mets:FLocat LOCTYPE="URL" xlink:title="license.txt" xlink:type="locator" xlink:href="/bitstream/handle/10672/516/license.txt?sequence=-1"/>
+</mets:file>
+</mets:fileGrp>
+</mets:fileSec>
+<mets:structMap LABEL="DSpace" TYPE="LOGICAL">
+<mets:div DMDID="dmd_1" TYPE="DSpace Item">
+<mets:div ID="div_2" TYPE="DSpace Content Bitstream">
+<mets:fptr FILEID="file_1024"/>
+</mets:div>
+</mets:div>
+</mets:structMap>
+</mets:METS>
