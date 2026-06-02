@@ -3,10 +3,19 @@ title: "Spatial Clustering of Scotch Whisky Distilleries"
 subtitle: "Based on Geographic Location and Flavor Profiles"
 author: "Clarice Eng"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  html_document:
+    toc: true              
+    toc_float: true        
+    toc_depth: 3           
+    theme: lumen
 ---
 
 # Spatial Clustering of Scotch Whisky Distilleries Based on Geographic Location and Flavor Profiles
+  
+```{r smoky-box-plot, echo=FALSE, fig.align='center', fig.cap="Distribution of Smoky Flavor by Region", out.width='80%'}
+##knitr::include_graphics("smoky_plot.png")
+```
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
@@ -15,14 +24,18 @@ library(sf)
 library(tidyverse)
 library(leaflet) # For beautiful interactive maps
 library(factoextra) # For clustering visualization
+library(knitr)
 ```
 
 ## Project Goal
 This project explores spatial clustering patterns of operational Scotch whisky distilleries.   
-By combining geographic coordinates (spatial features) with qualitative taste profiles (body, sweetness, smoky, medicinal, etc.), we aim to discover if regional geographic proximity correlates with distinct flavor profiles.
+By combining geographic coordinates (spatial features) with qualitative taste profiles (body, sweetness, smoky, medicinal, etc.), this project aims to discover if regional geographic proximity correlates with distinct flavor profiles.
 
 ## Datasets
-Source: https://datashare.ed.ac.uk/handle/10283/2592
+This dataset is an enhanced version of data sourced from https://www.mathstat.strath.ac.uk/outreach/nessie/nessie_whisky.html which contains the location of all currently operational Whisky distilleries in Scotland.  
+In addition to the geolocation information, the dataset contains information on the nature of the whisky giving a score for body, sweetness, smoky, medicinal, tabacco, honey, Spicy, Winey, nutty, malty, fruity, floral nature of each distillery. Only one score per distillery is provided to it is assumed that this is a generalisation of the whisky that each distillery offers.  
+Source: https://datashare.ed.ac.uk/handle/10283/2592. 
+Citation: Pope, Addy. (2017). Scotch Whisky characteristics, [Dataset]. University of Edinburgh. https://doi.org/10.7488/ds/1942.
 
 ```{r loading datasets}
 # Read the shapefile
@@ -31,9 +44,11 @@ whisky <- st_read("data/Whisky.shp")
 # Inspect the dataset structure
 glimpse(whisky)
 ```
+![Map of Scotland Whisky Distilleries](scotland_whisky_map.png){width=75%}  
+Image from *Source: Charles MacLean, "Understanding Scotch Malt Whisky" (The Council of Whiskey Masters)*
 
 This dataset uses British National Grid (EPSG:27700), using meters rather than raw Lat/Lon degrees.
-The shapefile does not have `Region` column, but we have `Postcode` and  geometry fully intact.
+The shapefile does not have `Region` column, but there are `Postcode` and  geometry fully intact.
 
 Hence, the 5 traditional Scotch regions are approximated based on their geographic coordinates (Easting and Northing) and famous layout boundaries (like the "Islay" island coordinates or the "Lowland-Highland" line):
 
@@ -66,7 +81,9 @@ missing_counts <- colSums(is.na(whisky %>% st_drop_geometry() %>% select(all_of(
 print("Missing values per flavor column:")
 print(missing_counts)
 ```
-### Data Exploratory Analysis
+
+  
+## Data Exploratory Analysis
 ```{r EDA}
 # Map showing traditional assigned regions across Scotland
 ggplot(data = whisky) +
@@ -87,11 +104,12 @@ ggplot(data = whisky) +
   scale_fill_brewer(palette = "Set1") +
   labs(title = "Distribution of 'Smoky' Flavor by Region")
 ```
+  
 One of my top 1 favourite whiskey is from **Islay**. Look at Islay, its median smokiness is way up at 3.5, completely detached from the rest of Scotland. Meanwhile, Lowlands and Speyside group tightly at the bottom around 1.  
-This strongly suggests that flavor profiles are not randomly distributed across space, making it a perfect candidate for spatial autocorrelation tests.
-
+This strongly suggests that _flavor profiles are not randomly distributed across space_, making it a perfect candidate for spatial autocorrelation tests.
+  
 ## Spatial Relationships & Autocorrelation
-K-Nearest Neighbors (KNN) graph will be built instead of a fixed-distance radius, which is not appropriate in Scotland because the Highlands are massive and sparse while Speyside is tiny and packed, thus, KNN guarantees that every distillery is evaluated against its closest peers.
+K-Nearest Neighbors (KNN) graph will be built instead of a fixed-distance radius, which is not appropriate to be applied to Scotland because the _Highlands_ are *massive* and *sparse* while _Speyside_ is *tiny* and *packed*, thus, KNN guarantees that every distillery is evaluated against its closest peers.
   
 *k = 4* as is used as  a standard baseline to generate a spatial weights matrix, and then run Global Moran's I tests.
   
@@ -101,12 +119,9 @@ Moran's I Value:
 - Negative value (near -1): Dispersion, spread out, scattered, or pushed away from each other rather than being grouped together.
   
 p-value < 0.05: Statistically significant evidence of spatial clustering.
+    
+KNN Network and Spatial Weights Matrix are constructed because Scottish distilleries exhibit highly uneven spatial density, K-Nearest Neighbors approach is used ($k = 4$) to establish local neighborhood contexts, then convert it into a row-standardized ("W") spatial weights matrix.
   
-    
-    
-KNN Network and Spatial Weights Matrix are constructed because Scottish distilleries exhibit highly uneven spatial density, we use a K-Nearest Neighbors approach ($k = 4$) to establish local neighborhood contexts, then convert it into a row-standardized ("W") spatial weights matrix.
-
-
 ```{r spatial-weights}
 # install.packages("spdep")
 library(spdep)
@@ -128,12 +143,11 @@ plot(st_geometry(whisky), col = "darkgray", main = "4-Nearest Neighbors Network 
 # Force R to immediately overlay the lines onto the active plot canvas
 plot(whisky_nb, coords, add = TRUE, col = "red", lwd = 1.5)
 ```
-
-#### Note:   
-
-During neighbor construction, warnings indicated identical point coordinates (co-located facilities) and the presence of 2 sub-graphs. The sub-graphs accurately reflect the geographic isolation of island-based distilleries from the Scottish mainland network.
-
-The warning _simpleWarning: knearneigh: identical points found_ means that there are two or more distilleries in your dataset share the exact same geographic coordinates (Easting and Northing).
+  
+#### Note  
+During the neighbor construction in the approach above, warnings indicated that identical point coordinates (co-located facilities) and the presence of 2 sub-graphs. The sub-graphs accurately reflect the geographic isolation of island-based distilleries from the Scottish mainland network.
+  
+The warning _simpleWarning: knearneigh: identical points found_ means that there are two or more distilleries in the dataset share the exact same geographic coordinates (Easting and Northing).
   
 In Scotland, some massive distilling operations own multiple boutique distilleries on the exact same site, or the original data collector mapped a few close neighbors using a single village center point.
 
@@ -158,7 +172,6 @@ print(moran_floral)
 ```
 ```{r summary-of-spatial-autocorrelation}
 # install.packages("broom")
-library(knitr)
 
 # Create a clean data frame extracting the exact statistics from results
 moran_results_df <- data.frame(
@@ -334,6 +347,7 @@ whisky_rf <- randomForest(Region ~ ., data = rf_data, ntree = 500, importance = 
 # 3. Print the Confusion Matrix and OOB Error Rate
 print(whisky_rf)
 ```
+
 ## Feature Importance
 ```{r feature-importance}
 # Convert importance results to a tidy dataframe for plotting
@@ -386,12 +400,5 @@ Traditional whisky regions are rich historical and marketing designations, not r
   
 While buying an **"Islay"** bottle remains a valid shortcut to expect heavy smoke, expecting a **"Highland"** malt to taste inherently different from a **"Speyside"** malt is a misconception disproven by the data. Moving forward, a classification system based on data-driven flavor clusters would be far more transparent and accurate for consumers.
   
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## References
+### AI Usage Disclosure
