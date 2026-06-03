@@ -11,8 +11,6 @@ output:
     theme: lumen
 ---
 
-# Spatial Clustering of Scotch Whisky Distilleries Based on Geographic Location and Flavor Profiles
-  
 ![Whiskey](whisky.png){width=75%}  
 Image from *Source: Charles MacLean, "Understanding Scotch Malt Whisky" (The Council of Whiskey Masters)*
 
@@ -29,7 +27,9 @@ library(knitr)
 ## Project Goal
 This project explores spatial clustering patterns of operational Scotch whisky distilleries.   
 By combining geographic coordinates (spatial features) with qualitative taste profiles (body, sweetness, smoky, medicinal, etc.), this project aims to discover if regional geographic proximity correlates with distinct flavor profiles.
-
+  
+---
+  
 ## Datasets
 This dataset is an enhanced version of data sourced from https://www.mathstat.strath.ac.uk/outreach/nessie/nessie_whisky.html which contains the location of all currently operational Whisky distilleries in Scotland.  
 In addition to the geolocation information, the dataset contains information on the nature of the whisky giving a score for body, sweetness, smoky, medicinal, tabacco, honey, Spicy, Winey, nutty, malty, fruity, floral nature of each distillery. Only one score per distillery is provided to it is assumed that this is a generalisation of the whisky that each distillery offers.  
@@ -80,7 +80,8 @@ missing_counts <- colSums(is.na(whisky %>% st_drop_geometry() %>% select(all_of(
 print("Missing values per flavor column:")
 print(missing_counts)
 ```
-
+  
+---
   
 ## Data Exploratory Analysis
 ```{r EDA}
@@ -106,6 +107,8 @@ ggplot(data = whisky) +
   
 One of my top 1 favourite whiskey is from **Islay**. Look at Islay, its median smokiness is way up at 3.5, completely detached from the rest of Scotland. Meanwhile, Lowlands and Speyside group tightly at the bottom around 1.  
 This strongly suggests that _flavor profiles are not randomly distributed across space_, making it a perfect candidate for spatial autocorrelation tests.
+  
+---
   
 ## Spatial Relationships & Autocorrelation
 K-Nearest Neighbors (KNN) graph will be built instead of a fixed-distance radius, which is not appropriate to be applied to Scotland because the _Highlands_ are *massive* and *sparse* while _Speyside_ is *tiny* and *packed*, thus, KNN guarantees that every distillery is evaluated against its closest peers.
@@ -223,8 +226,9 @@ The `Fruity` flavor profile yields a moderate but statistically significant posi
 
 #### Floral Profile: Spatial Randomness
 Interestingly, the `Floral` profile fails to clear the standard $95\%$ confidence threshold (Moran's I = **0.089**, Z-score = **1.494**, $p = 0.068$). Because the p-value is greater than $0.05$, we fail to reject the null hypothesis of spatial randomness. This implies that a whisky's floral qualities are likely dictated by individual distillery-specific production choices (such as cut-points during distillation) rather than regional or geographic proximity.
-
-
+  
+---
+  
 ## Flavor Pattern Exploration (PCA)
 The findings above shows that geography definitely plays a role in some flavors (like Smoke) but not others (like Floral), we need to find out how all 12 flavor variables interact with each other before building a model. We do this with Principal Component Analysis (PCA) to reduce our 12 taste dimensions, so that the main axes of taste variation across Scottish distilleries can be extracted.
 
@@ -251,7 +255,9 @@ fviz_pca_biplot(whisky_pca,
                 legend.title = "Geographic Region",
                 title = "PCA Biplot: Whisky Flavor Dimensions vs Geographic Regions")
 ```
-
+  
+---
+  
 ## Interpretation of PCA Results
 1. The Scree Plot (Variance Explained)
 The Math: Dimension 1 (PC1) accounts for 27% of the total flavor variance, and Dimension 2 (PC2) explains 15.9%. Combined, these first two principal components capture 42.9% of the variation across all 12 variables.
@@ -266,8 +272,9 @@ The **Islay** Cluster (Green Squares): Notice how almost all the green Islay dot
 The **Speyside** Cluster (Orange Boxes): The orange Speyside dots group strongly on the left-hand quadrants. They track heavily along the _Fruity, Sweetness, Floral, Honey, and Winey arrows_. This shows Speyside's classic profile is _light, sweet, and complex_, diametrically _opposed to the heavy peat of Islay_.
 
 **Highlands** (Blue Triangles) & Lowlands (Purple Crosses): These are much more dispersed in the center and bottom quadrants, showing they act as transitional flavor profiles bridging the _sweeter Speyside styles and more robust textures_.
-
-
+  
+---
+  
 ## Unsupervised Spatial Machine Learning
 ### Spatially Constrained K-Means Clustering
 To discover data-driven whisky groupings, a combined matrix of scaled flavor scores and physical Easting/Northing coordinates was fed into a K-Means algorithm. This ensures the clusters respect both organoleptic properties and geographic proximity.$k = 5$ was set to test if data-driven configurations naturally recreate the 5 traditional regions.
@@ -305,7 +312,7 @@ comparison_table <- table(Traditional_Region = whisky$Region, ML_Cluster = whisk
 print(comparison_table)
 ```
 
-## Analyzing the Flavor-Driven Clusters
+### Analyzing the Flavor-Driven Clusters
 The cross-tabulation matrix reveals a fascinating story about how math groups these distilleries compared to history:
 
 1. **The Highly Distinct Clusters** (Success Stories)
@@ -321,7 +328,9 @@ Cluster 3 (The South & Coast Blend): This cluster captures both Campbeltown dist
 - Cluster 5 contains 14 Speyside and 15 Highland distilleries.
 
 Hence, this is mathematical proof that Speyside and the surrounding Highlands are not distinct flavor regions. They completely overlap, sharing the exact same sweet, floral, and malty flavor dimensions. Historical labeling divides them, but the machine learning model treats them as one massive contiguous flavor region.
-
+  
+--- 
+  
 ## Supervised Machine Learning (Random Forest)
 Since the traditional regions don't perfectly align with flavor data, supervised classification is done to challenge this idea.
 
@@ -382,15 +391,20 @@ The confusion matrix reveals where regional flavor definitions completely break 
 * **Islay (Class Error: 0.500):** Islay achieved the highest relative distinctiveness, but still saw 4 of its distilleries misclassified into the Highlands due to the presence of lighter, unpeated offerings produced on the island.  
 
 #### 2. Flavor Drivers (Feature Importance Analysis)
-The Feature Importance plot clarifies exactly which taste characteristics carry regional information:
-* **Smoky and Medicinal** are the undisputed dominant predictors, topping the Mean Decrease in Gini metric. This aligns with our Global Moran's I test; the heavy use of peat creates a distinct, geographically traceable profile that allows the model to separate heavily-peated coastal/island distilleries from the rest of Scotland.
-* **Sweetness, Floral, and Fruity** occupy a secondary tier of importance. These sweet, ester-driven attributes primarily help the model distinguish the core Speyside style from heavy malts.
-* **Tobacco and Malty** provide almost zero informational utility to the splits, indicating that these background traits are uniformly distributed across all Scottish distilleries regardless of geographic territory.
-
+The Feature Importance plot clarifies exactly which taste characteristics carry regional information:  
+  
+* **Smoky and Medicinal** are the undisputed dominant predictors, topping the Mean Decrease in Gini metric. This aligns with our Global Moran's I test; the heavy use of peat creates a distinct, geographically traceable profile that allows the model to separate heavily-peated coastal/island distilleries from the rest of Scotland.  
+  
+* **Sweetness, Floral, and Fruity** occupy a secondary tier of importance. These sweet, ester-driven attributes primarily help the model distinguish the core Speyside style from heavy malts.  
+  
+* **Tobacco and Malty** provide almost zero informational utility to the splits, indicating that these background traits are uniformly distributed across all Scottish distilleries regardless of geographic territory.  
+  
+--- 
+  
 ## Conclusion and Discussion
 This study combined spatial statistics and machine learning to evaluate whether traditional Scotch whisky regions genuinely define distinct flavor profiles. The empirical data reveals a clear mismatch between historical regional boundaries and actual spirit chemistry.
   
-### Summary of Key Findings. 
+### Summary of Key Findings  
 * **Spatial Autocorrelation:** Geographic location only dictates specific, targeted flavors. While `Smoky` notes show intense regional clustering (Moran's I = 0.4648, $p < 0.001$), `Floral` characteristics are distributed completely at random ($p = 0.0676$). This proves that localized traditions and independent distillery-level choices coexist.    
 * **Flavor Overlap:** Unsupervised K-Means clustering ($k=5$) easily isolated the heavily-peated Islay distilleries into a distinct group. However, it completely merged Speyside and the Highlands into the exact same data clusters, proving their physical boundaries do not represent different flavor profiles.  
 * **Classification Failure:** A supervised Random Forest model failed to reliably predict a distillery's region based on its taste, yielding a massive **51.16% error rate**. The model consistently misclassified nearly half of all Highland and Speyside entries as each other because their taste profiles are functionally identical.  
