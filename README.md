@@ -18,6 +18,32 @@ Below is a map of Scotland marking the analyzed distilleries and their spatial c
 
 ---
 
+# Spatial Data Science & Machine Learning Analysis of Scottish Whisky Flavor Profiles
+
+This repository contains a spatial data science and machine learning project evaluating the relationship between traditional Scottish whisky regions and actual chemical flavor dimensions across 86 operational distilleries. 
+
+By combining spatial statistics (Global Moran's I) with unsupervised clustering (K-Means) and supervised classification (Random Forests), this study evaluates whether historical geographic designations function as distinct, reliable sensory profiles or merely cultural marketing boundaries.
+
+---
+
+## 📁 Project Structure
+
+```text
+.
+├── README.md               # Repository landing page with project summary
+├── whisky_analysis.Rmd     # Core R Markdown script containing text and code chunks
+├── whisky_analysis.html    # Compiled HTML report with interactive elements (TOC)
+├── data/
+│   └── whisky_distilleries.csv  # Cleaned dataset of the 86 Scottish distilleries
+├── images/
+│   └── scotland_whisky_map.png  # Map of Scotland with distillery spatial network
+└── outputs/
+    ├── kmeans_clusters.png # K-Means cluster output plot
+    └── rf_importance.png   # Random Forest feature importance chart
+```
+
+---
+
 ## 📊 Summary of Key Findings
 
 * **Flavor Overlap:** Unsupervised K-Means clustering ($k=5$) successfully isolated the heavily-peated Islay distilleries into a distinct spatial group. However, it completely merged Speyside and the Highlands into the same flavor clusters, proving their physical boundaries do not represent uniquely different flavor profiles.
@@ -28,7 +54,7 @@ Below is a map of Scotland marking the analyzed distilleries and their spatial c
 
 ## 🥃 Project Conclusion
 
-Traditional whisky regions are rich historical, cultural, and marketing designations rather than binding flavor blueprints. While purchasing an **"Islay"** bottle remains a highly reliable shortcut to expect heavy smoke, expecting a **"Highland"** malt to taste inherently different from a **"Speyside"** malt is an organoleptic misconception disproven by spatial data. Ultimately, a distillery’s unique engineering profile—such as still shapes, cut-points, and cask selection—dictates flavor far more heavily than geographic terroir.
+Traditional whisky regions are rich historical, cultural, and marketing designations rather than binding flavor blueprints. While purchasing an **"Islay"** bottle remains a highly reliable shortcut to expect heavy smoke, expecting a **"Highland"** malt to taste inherently different from a **"Speyside"** malt is an organoleptic misconception disproven by spatial data. Ultimately, a distillery’s unique engineering profile-such as still shapes, cut-points, and cask selection which dictates flavor far more heavily than geographic terroir.
 
 ---
 
