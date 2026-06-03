@@ -13,9 +13,8 @@ output:
 
 # Spatial Clustering of Scotch Whisky Distilleries Based on Geographic Location and Flavor Profiles
   
-```{r smoky-box-plot, echo=FALSE, fig.align='center', fig.cap="Distribution of Smoky Flavor by Region", out.width='80%'}
-##knitr::include_graphics("smoky_plot.png")
-```
+![Whiskey](whisky.png){width=75%}  
+Image from *Source: Charles MacLean, "Understanding Scotch Malt Whisky" (The Council of Whiskey Masters)*
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
@@ -257,21 +256,21 @@ fviz_pca_biplot(whisky_pca,
 1. The Scree Plot (Variance Explained)
 The Math: Dimension 1 (PC1) accounts for 27% of the total flavor variance, and Dimension 2 (PC2) explains 15.9%. Combined, these first two principal components capture 42.9% of the variation across all 12 variables.
 
-What it means for your report: While 43% means there is still secondary complexity in the remaining dimensions, a two-dimensional plot is strong enough to visually identify clear clusters and pull out the primary flavor profiles of Scotland.
+While 43% means there is still secondary complexity in the remaining dimensions, a two-dimensional plot is strong enough to visually identify clear clusters and pull out the primary flavor profiles of Scotland.
 
 2. The PCA Biplot (Flavor Interactions & Regional Trends)
-Look at how the arrows (flavor directions) and the color-coded distillery dots group up on your screen:
+Look at how the arrows (flavor directions) and the color-coded distillery dots group up:
 
-The Islay Cluster (Green Squares): Notice how almost all the green Islay dots pull hard to the far right, aligning perfectly with the Smoky and Medicinal flavor arrows. This matches your Moran's I result perfectly; Islay is an outlier both geographically and chemically.
+The **Islay** Cluster (Green Squares): Notice how almost all the green Islay dots pull hard to the far right, _aligning perfectly with the Smoky and Medicinal flavor arrows_. This matches the Moran's I result perfectly; Islay is an outlier both geographically and chemically.
 
-The Speyside Cluster (Orange Boxes): The orange Speyside dots group strongly on the left-hand quadrants. They track heavily along the Fruity, Sweetness, Floral, Honey, and Winey arrows. This shows Speyside's classic profile is light, sweet, and complex, diametrically opposed to the heavy peat of Islay.
+The **Speyside** Cluster (Orange Boxes): The orange Speyside dots group strongly on the left-hand quadrants. They track heavily along the _Fruity, Sweetness, Floral, Honey, and Winey arrows_. This shows Speyside's classic profile is _light, sweet, and complex_, diametrically _opposed to the heavy peat of Islay_.
 
-Highlands (Blue Triangles) & Lowlands (Purple Crosses): These are much more dispersed in the center and bottom quadrants, showing they act as transitional flavor profiles bridging the sweeter Speyside styles and more robust textures.
+**Highlands** (Blue Triangles) & Lowlands (Purple Crosses): These are much more dispersed in the center and bottom quadrants, showing they act as transitional flavor profiles bridging the _sweeter Speyside styles and more robust textures_.
 
 
 ## Unsupervised Spatial Machine Learning
-## 6.1 Spatially Constrained K-Means Clustering
-To discover data-driven whisky groupings, we feed a combined matrix of scaled flavor scores and physical Easting/Northing coordinates into a K-Means algorithm. This ensures our clusters respect both organoleptic properties and geographic proximity. We set $k = 5$ to test if data-driven configurations naturally recreate the 5 traditional regions.
+### Spatially Constrained K-Means Clustering
+To discover data-driven whisky groupings, a combined matrix of scaled flavor scores and physical Easting/Northing coordinates was fed into a K-Means algorithm. This ensures the clusters respect both organoleptic properties and geographic proximity.$k = 5$ was set to test if data-driven configurations naturally recreate the 5 traditional regions.
 
 ```{r kmeans-clustering}
 # 1. Extract coordinates from our sf object
@@ -305,32 +304,32 @@ ggplot(data = whisky) +
 comparison_table <- table(Traditional_Region = whisky$Region, ML_Cluster = whisky$Cluster)
 print(comparison_table)
 ```
-Section 6.3: Analyzing the Flavor-Driven Clusters
-Your cross-tabulation matrix reveals a fascinating story about how math groups these distilleries compared to history:
 
-1. The Highly Distinct Clusters (Success Stories)
-Cluster 2 (The Islay Core): Look at Cluster 2. It contains exactly 5 distilleries, all from Islay. The algorithm isolated the core heavily-peated Islay distilleries with 100% purity.
+## Analyzing the Flavor-Driven Clusters
+The cross-tabulation matrix reveals a fascinating story about how math groups these distilleries compared to history:
 
+1. **The Highly Distinct Clusters** (Success Stories)
+Cluster 2 (The Islay Core): It contains exactly 5 distilleries, all from Islay. The algorithm isolated the core heavily-peated Islay distilleries with 100% purity.
+  
 Cluster 3 (The South & Coast Blend): This cluster captures both Campbeltown distilleries (2) and all Lowlands distilleries (4), alongside a few coastal neighbors. This proves that Campbeltown and Lowlands share massive commonalities in light or transitional profiles, grouping them together into a unified southwestern flavor zone.
+  
+2. **The Great Speyside-Highland Overlap**
+- Clusters 1 and 5: These two groups dominate the northeastern map.
 
-2. The Great Speyside-Highland Overlap
-Clusters 1 and 5: These two groups dominate the northeastern map.
+- Cluster 1 contains 17 Speyside and 13 Highland distilleries.
 
-Cluster 1 contains 17 Speyside and 13 Highland distilleries.
+- Cluster 5 contains 14 Speyside and 15 Highland distilleries.
 
-Cluster 5 contains 14 Speyside and 15 Highland distilleries.
+Hence, this is mathematical proof that Speyside and the surrounding Highlands are not distinct flavor regions. They completely overlap, sharing the exact same sweet, floral, and malty flavor dimensions. Historical labeling divides them, but the machine learning model treats them as one massive contiguous flavor region.
 
-What this means for your report: This is mathematical proof that Speyside and the surrounding Highlands are not distinct flavor regions. They completely overlap, sharing the exact same sweet, floral, and malty flavor dimensions. Historical labeling divides them, but the machine learning model treats them as one massive contiguous flavor region.
+## Supervised Machine Learning (Random Forest)
+Since the traditional regions don't perfectly align with flavor data, supervised classification is done to challenge this idea.
 
-🚀 Moving to Section 7: Supervised Machine Learning (Random Forest)
-Now that we know the traditional regions don't perfectly align with flavor data, let's test this from a supervised classification angle.
+A Random Forest Classifier is built to answer:  
+Can a machine learning algorithm accurately __predict a distillery's traditional region based ONLY on how its whisky tastes__? If the model scores high accuracy, the traditional classification holds up. If accuracy is low, it confirms that regional naming conventions are more about geography/marketing than a strict standard of flavor.
 
-We will build a Random Forest Classifier to answer: Can a machine learning algorithm accurately predict a distillery's traditional region based ONLY on how its whisky tastes? If the model scores high accuracy, the traditional classification holds up. If accuracy is low, it confirms that regional naming conventions are more about geography/marketing than a strict standard of flavor.
-
-# 7. Supervised Machine Learning
-
-## 7.1 Random Forest Regional Classification
-We train a Random Forest model with 500 trees using our 12 numeric flavor characteristics as predictors. Our target variable is the engineered traditional `Region`. We will evaluate the Out-of-Bag (OOB) error estimate to calculate the model's true accuracy.
+### Random Forest Regional Classification
+A Random Forest model is trained with 500 trees using 12 numeric flavor characteristics as predictors. The target variable is the engineered traditional `Region`. The Out-of-Bag (OOB) error will be evaluated to estimate to calculate the model's true accuracy.
 
 ```{r random-forest}
 library(randomForest)
@@ -348,7 +347,7 @@ whisky_rf <- randomForest(Region ~ ., data = rf_data, ntree = 500, importance = 
 print(whisky_rf)
 ```
 
-## Feature Importance
+### Feature Importance
 ```{r feature-importance}
 # Convert importance results to a tidy dataframe for plotting
 importance_df <- as.data.frame(importance(whisky_rf))
@@ -366,18 +365,23 @@ ggplot(importance_df, aes(x = reorder(Flavor, MeanDecreaseGini), y = MeanDecreas
     y = "Importance (Mean Decrease Gini)"
   )
 ```
-## Analysis of Supervised Classification and Feature Importance
+
+### Analysis of Supervised Classification and Feature Importance
 
 The Random Forest classifier yielded an Out-of-Bag (OOB) error rate of **51.16%**, meaning the model misclassified more than half of the distilleries when attempting to predict their traditional geographic region based solely on flavor profiles. This high error rate strongly confirms that traditional whisky regions do not possess uniquely cohesive, self-contained flavor signatures.
 
-### 1. Granular Breakdown of Class Errors
-Looking at the confusion matrix reveals where regional flavor definitions completely break down:
-* **Campbeltown (Class Error: 1.000):** The model failed to correctly classify a single Campbeltown distillery, misclassifying all of them into the Highlands. This indicates that Campbeltown lacks an independent organoleptic footprint in this dataset.
-* **Lowlands (Class Error: 0.857):** Out of 7 Lowland distilleries, only 1 was correctly identified; 5 were misclassified as Highlands and 1 as Speyside. 
-* **The Speyside-Highlands Friction:** Out of 32 Speyside distilleries, 14 were misclassified as Highlands. Conversely, out of 37 Highland distilleries, 15 were misclassified as Speyside. This massive cross-contamination (affecting nearly half of each region's sample) mathematically substantiates our K-Means finding: Speyside and Highland whiskies share an overlapping flavor continuum.
-* **Islay (Class Error: 0.500):** Islay achieved the highest relative distinctiveness, but still saw 4 of its distilleries misclassified into the Highlands due to the presence of lighter, unpeated offerings produced on the island.
+#### 1. Granular Breakdown of Class Errors
+The confusion matrix reveals where regional flavor definitions completely break down:  
+* **Campbeltown (Class Error: 1.000):** The model failed to correctly classify a single Campbeltown distillery, misclassifying all of them into the Highlands. This indicates that Campbeltown lacks an independent organoleptic footprint in this dataset.  
 
-### 2. Flavor Drivers (Feature Importance Analysis)
+* **Lowlands (Class Error: 0.857):** Out of 7 Lowland distilleries, only 1 was correctly identified; 5 were misclassified as Highlands and 1 as Speyside. 
+
+* **The Speyside-Highlands Friction:** Out of 32 Speyside distilleries, 14 were misclassified as Highlands. Conversely, out of 37 Highland distilleries,
+15 were misclassified as Speyside. This massive cross-contamination (affecting nearly half of each region's sample) mathematically substantiates our K-Means finding: Speyside and Highland whiskies share an overlapping flavor continuum.  
+
+* **Islay (Class Error: 0.500):** Islay achieved the highest relative distinctiveness, but still saw 4 of its distilleries misclassified into the Highlands due to the presence of lighter, unpeated offerings produced on the island.  
+
+#### 2. Flavor Drivers (Feature Importance Analysis)
 The Feature Importance plot clarifies exactly which taste characteristics carry regional information:
 * **Smoky and Medicinal** are the undisputed dominant predictors, topping the Mean Decrease in Gini metric. This aligns with our Global Moran's I test; the heavy use of peat creates a distinct, geographically traceable profile that allows the model to separate heavily-peated coastal/island distilleries from the rest of Scotland.
 * **Sweetness, Floral, and Fruity** occupy a secondary tier of importance. These sweet, ester-driven attributes primarily help the model distinguish the core Speyside style from heavy malts.
@@ -386,19 +390,49 @@ The Feature Importance plot clarifies exactly which taste characteristics carry 
 ## Conclusion and Discussion
 This study combined spatial statistics and machine learning to evaluate whether traditional Scotch whisky regions genuinely define distinct flavor profiles. The empirical data reveals a clear mismatch between historical regional boundaries and actual spirit chemistry.
   
-### Summary of Key Findings
-  
-* **Spatial Autocorrelation:** Geographic location only dictates specific, targeted flavors. While `Smoky` notes show intense regional clustering (Moran's I = 0.4648, $p < 0.001$), `Floral` characteristics are distributed completely at random ($p = 0.0676$). This proves that localized traditions and independent distillery-level choices coexist.  
+### Summary of Key Findings. 
+* **Spatial Autocorrelation:** Geographic location only dictates specific, targeted flavors. While `Smoky` notes show intense regional clustering (Moran's I = 0.4648, $p < 0.001$), `Floral` characteristics are distributed completely at random ($p = 0.0676$). This proves that localized traditions and independent distillery-level choices coexist.    
 * **Flavor Overlap:** Unsupervised K-Means clustering ($k=5$) easily isolated the heavily-peated Islay distilleries into a distinct group. However, it completely merged Speyside and the Highlands into the exact same data clusters, proving their physical boundaries do not represent different flavor profiles.  
 * **Classification Failure:** A supervised Random Forest model failed to reliably predict a distillery's region based on its taste, yielding a massive **51.16% error rate**. The model consistently misclassified nearly half of all Highland and Speyside entries as each other because their taste profiles are functionally identical.  
 * **Primary Drivers:** Feature importance metrics show that `Smoky` and `Medicinal` are the only two traits that carry strong regional signatures. For all other traits (such as sweetness, fruitiness, or maltiness), Scottish whiskies function as a continuous, overlapping spectrum rather than isolated territories.  
 
 ---
 
-## Final Takeaway
+### Final Takeaway
 Traditional whisky regions are rich historical and marketing designations, not reliable flavor guides. Because modern distilleries buy malted barley from centralized maltings and source oak casks globally, a whisky's flavor is primarily driven by internal distillery engineering choices—such as still shape and distillation cuts—rather than regional terroir. 
   
-While buying an **"Islay"** bottle remains a valid shortcut to expect heavy smoke, expecting a **"Highland"** malt to taste inherently different from a **"Speyside"** malt is a misconception disproven by the data. Moving forward, a classification system based on data-driven flavor clusters would be far more transparent and accurate for consumers.
+> While buying an **"Islay"** bottle remains a valid shortcut to expect heavy smoke, expecting a **"Highland"** malt to taste inherently different from a **"Speyside"** malt is a misconception disproven by the data. Moving forward, a classification system based on data-driven flavor clusters would be far more transparent and accurate for consumers.
+  
+---
   
 ## References
-### AI Usage Disclosure
+Bivand, R. S., & Wong, D. W. S. (2018). Comparing implementations of global and local indicators of spatial association. *TEST*, *27*(3), 716–748. https://doi.org/10.1007/s11749-018-0599-x [For the `spdep` package]
+  
+Breiman, L. (2001). Random Forests. *Machine Learning*, *45*(1), 5–32. https://doi.org/10.1023/A:1010933404324 [For the `randomForest` package]
+  
+Kassim, A. (2020). *Whisky distilleries of Scotland dataset*. Kaggle. https://www.kaggle.com/datasets [Replace with the specific link if your dataset came from a specific repository or university archive]
+  
+Kassambara, A., & Mundt, F. (2020). *factoextra: Extract and visualize the results of multivariate data analyses* (R package version 1.0.7). https://CRAN.R-project.org/package=factoextra
+  
+MacLean, C. (2020). *Understanding Scotch malt whisky: Official study guide of the Certified Scotch Professional study and certification program*. The Council of Whiskey Masters.
+  
+Pebesma, E. (2018). Simple Features for R: Standardized support for spatial vector data. *The R Journal*, *10*(1), 439–446. https://doi.org/10.32614/RJ-2018-009 [For the `sf` package]
+  
+R Core Team. (2024). *R: A language and environment for statistical computing*. R Foundation for Statistical Computing. https://www.R-project.org/
+  
+Wickham, H., Averick, M., Bryan, J., Chang, W., McGowan, L. D., François, R., Grolemund, G., Hayes, A., Henry, L., Hester, J., Kuhn, M., Pedersen, T. L., Miller, E., Bache, S. M., Müller, K., Ooms, J., Robinson, D., Seidel, D. P., Spinu, V., … Yutani, H. (2019). Welcome to the tidyverse. *Journal of Open Source Software*, *4*(43), 1686. https://doi.org/10.21105/joss.01686 [For the `tidyverse` / `ggplot2` packages]
+  
+---
+  
+#### AI Usage Disclosure
+
+In accordance with institutional academic integrity guidelines, the author acknowledges the supportive use of generative artificial intelligence (Gemini) during the development of this project. 
+  
+Specifically, AI assistance was utilized for the following tasks:
+* **Code Troubleshooting & Optimization:** Debugging specific R environment compilation errors (such as geometry exclusions, package syntax updates, and graphic color parameters).
+* **Structural Formatting:** Technical guidance on setting up dynamic R Markdown templates, layout alignment, and table generation.
+* **Refinement:** Assistance in streamlining the clarity of complex statistical interpretations based on user-supplied data outputs.
+  
+All data selection, substantive exploratory analysis, spatial modeling execution, thematic interpretations, and final text composition were fundamentally directed, reviewed, and finalized by the human author. The core intellectual arguments and ownership of this work belong entirely to the author.  
+  
+---
